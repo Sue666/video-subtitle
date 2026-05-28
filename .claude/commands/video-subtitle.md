@@ -19,13 +19,19 @@
    which ffmpeg || brew install ffmpeg
    ```
 
-2. **Whisper**
+2. **Whisper（自动选择最快方案）**
+
+   检测芯片类型，Apple Silicon（M1/M2/M3）优先使用 `mlx-whisper`（GPU 加速，速度约快 5 倍）：
+
    ```bash
-   pip3 show openai-whisper 2>/dev/null || pip3 install openai-whisper
-   ```
-   找到 whisper 可执行路径：
-   ```bash
-   WHISPER=$(which whisper 2>/dev/null || find ~/Library/Python -name whisper -type f 2>/dev/null | head -1)
+   CHIP=$(uname -m)
+   if [ "$CHIP" = "arm64" ]; then
+     pip3 show mlx-whisper 2>/dev/null || pip3 install mlx-whisper
+     BACKEND="mlx"
+   else
+     pip3 show openai-whisper 2>/dev/null || pip3 install openai-whisper
+     BACKEND="openai"
+   fi
    ```
 
 3. **Pillow**（烧录字幕时需要）
@@ -49,9 +55,35 @@ find . -maxdepth 1 \( -name "*.mp4" -o -name "*.mov" -o -name "*.avi" -o -name "
 
 ### 第四步：语音转录 → SRT
 
-对每个视频执行转录（第一次运行会下载约 1.4GB 的 medium 模型）：
+根据第一步检测到的 `$BACKEND` 选择转录方式（第一次运行会下载模型，约 1.4GB）：
 
+**Apple Silicon（mlx-whisper，推荐）：**
+```python
+import mlx_whisper, json, re
+
+result = mlx_whisper.transcribe(
+    "<音频/视频文件路径>",
+    path_or_hf_repo="mlx-community/whisper-medium-mlx"
+)
+
+def to_srt_time(s):
+    h = int(s // 3600); m = int((s % 3600) // 60)
+    sec = int(s % 60); ms = int((s % 1) * 1000)
+    return f"{h:02d}:{m:02d}:{sec:02d},{ms:03d}"
+
+lines = []
+for i, seg in enumerate(result["segments"], 1):
+    lines += [str(i), f"{to_srt_time(seg['start'])} --> {to_srt_time(seg['end'])}", seg['text'].strip(), ""]
+
+srt_path = "<输出路径>.srt"
+with open(srt_path, "w", encoding="utf-8") as f:
+    f.write("\n".join(lines))
+print(f"字幕已生成：{srt_path}")
+```
+
+**Intel Mac（openai-whisper）：**
 ```bash
+WHISPER=$(which whisper 2>/dev/null || find ~/Library/Python -name whisper -type f 2>/dev/null | head -1)
 "$WHISPER" "<视频文件路径>" --model medium --output_format srt --output_dir .
 ```
 
