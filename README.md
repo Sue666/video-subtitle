@@ -21,14 +21,14 @@ A Claude Code skill that transcribes video audio to SRT subtitles and optionally
 Clone this repo into your Claude Code commands directory:
 
 ```bash
-git clone https://github.com/theplant/video-subtitle.git ~/.claude/commands/video-subtitle
+git clone https://github.com/Sue666/video-subtitle.git ~/.claude/commands/video-subtitle
 cp ~/.claude/commands/video-subtitle/.claude/commands/video-subtitle.md ~/.claude/commands/video-subtitle.md
 ```
 
 Or install with a single command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/theplant/video-subtitle/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Sue666/video-subtitle/main/install.sh | bash
 ```
 
 ## Usage
